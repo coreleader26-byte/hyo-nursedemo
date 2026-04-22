@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>효사랑가족요양병원 간호부 교대근무 관리 시스템</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background: #f0f2f5; font-size: 13px; color: #222; }
+
+  /* === HEADER === */
+  .header { background: #1a3a5c; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-right { font-size: 12px; color: #a8c4e0; }
+
+  /* === LAYOUT === */
+  .layout { display: flex; height: calc(100vh - 50px); }
+
+  /* === SIDEBAR === */
+  .sidebar { width: 160px; background: #fff; border-right: 1px solid #dde3ea; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+  .sidebar-title { padding: 10px 12px; font-size: 11px; font-weight: 700; color: #888; letter-spacing: 0.5px; background: #f8f9fb; border-bottom: 1px solid #eee; }
+  .ward-btn { padding: 10px 12px; cursor: pointer; border: none; background: none; text-align: left; width: 100%; font-size: 12px; color: #444; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; display: flex; align-items: center; gap: 6px; }
+  .ward-btn:hover { background: #eef4fb; }
+  .ward-btn.active { background: #1a3a5c; color: #fff; font-weight: 700; }
+  .ward-dot { width: 7px; height: 7px; border-radius: 50%; background: #90b4d0; flex-shrink: 0; }
+  .ward-btn.active .ward-dot { background: #7dd3fc; }
+
+  /* === MAIN === */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* === TOOLBAR === */
+  .toolbar { background: #fff; border-bottom: 1px solid #dde3ea; padding: 8px 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .toolbar-group { display: flex; align-items: center; gap: 6px; }
+  .toolbar label { font-size: 12px; color: #555; }
+  .toolbar select, .toolbar input[type=number] { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; background: #fff; }
+  .btn { padding: 5px 14px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; transition: background 0.15s; }
+  .btn-primary { background: #1a3a5c; color: #fff; }
+  .btn-primary:hover { background: #245280; }
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-success:hover { background: #15803d; }
+  .btn-warning { background: #d97706; color: #fff; }
+  .btn-warning:hover { background: #b45309; }
+  .btn-outline { background: #fff; color: #1a3a5c; border: 1px solid #1a3a5c; }
+  .btn-outline:hover { background: #eef4fb; }
+  .sep { width: 1px; height: 24px; background: #dde3ea; }
+
+  /* === TABS === */
+  .tabs { display: flex; border-bottom: 1px solid #dde3ea; background: #fff; }
+  .tab { padding: 8px 18px; cursor: pointer; font-size: 12px; color: #666; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: #1a3a5c; border-bottom-color: #1a3a5c; font-weight: 700; }
+  .tab:hover:not(.active) { background: #f5f7fa; }
+
+  /* === CONTENT AREA === */
+  .content { flex: 1; overflow: auto; padding: 12px 16px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* === SCHEDULE TABLE === */
+  .schedule-wrap { overflow: auto; }
+  .schedule-table { border-collapse: collapse; font-size: 11.5px; min-width: max-content; }
+  .schedule-table th, .schedule-table td { border: 1px solid #d0d7de; padding: 0; text-align: center; white-space: nowrap; }
+  .schedule-table th { background: #1a3a5c; color: #fff; padding: 4px 6px; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+  .schedule-table th.weekend { background: #2d5986; }
+  .th-fixed { position: sticky; left: 0; z-index: 20; background: #1a3a5c !important; }
+
+  /* row types */
+  .row-rn { background: #fffbf0; }
+  .row-an { background: #f0f8ff; }
+  .row-rn td.name-cell { background: #fff8e1; font-weight: 700; color: #7c4a00; }
+  .row-an td.name-cell { background: #e3f0ff; font-weight: 700; color: #0a4a7c; }
+  .name-cell { position: sticky; left: 0; z-index: 5; font-size: 12px; padding: 3px 8px !important; min-width: 70px; }
+  .grade-cell { position: sticky; left: 70px; z-index: 5; padding: 3px 6px !important; font-size: 11px; font-weight: 700; }
+  .row-rn .grade-cell { background: #fff3cd; color: #7c4a00; }
+  .row-an .grade-cell { background: #cfe2ff; color: #0a4a7c; }
+
+  /* shift cells */
+  .shift-cell { width: 32px; min-width: 32px; height: 28px; cursor: pointer; position: relative; transition: filter 0.1s; }
+  .shift-cell:hover { filter: brightness(0.88); }
+  .shift-cell.weekend-col { border-left: 2px solid #b0c4de !important; }
+  .shift-input { width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-size: 11.5px; font-weight: 700; cursor: pointer; padding: 0; }
+
+  /* shift colors */
+  .s-D  { background: #dbeafe; color: #1d4ed8; }
+  .s-E  { background: #fef9c3; color: #854d0e; }
+  .s-N  { background: #ede9fe; color: #5b21b6; }
+  .s-M  { background: #dcfce7; color: #166534; }
+  .s-DE { background: #fed7aa; color: #9a3412; }
+  .s-DN { background: #e9d5ff; color: #6b21a8; }
+  .s-EN { background: #fce7f3; color: #9d174d; }
+  .s-HD { background: #d1fae5; color: #065f46; }
+  .s-OF { background: #f1f5f9; color: #94a3b8; }
+  .s-SL { background: #fff1f2; color: #be123c; }
+  .s-empty { background: #fff; color: #bbb; }
+
+  /* summary cells */
+  .sum-cell { padding: 3px 6px !important; font-size: 11px; font-weight: 700; min-width: 36px; }
+  .sum-d { color: #1d4ed8; }
+  .sum-e { color: #854d0e; }
+  .sum-n { color: #5b21b6; }
+  .sum-off { color: #64748b; }
+  .sum-warn { color: #dc2626; background: #fef2f2; }
+
+  /* daily count row */
+  .count-row td { background: #f8fafc; font-size: 10.5px; color: #555; padding: 2px 0 !important; }
+  .count-d { color: #1d4ed8; font-weight: 700; }
+  .count-e { color: #854d0e; font-weight: 700; }
+  .count-n { color: #5b21b6; font-weight: 700; }
+
+  /* === STATS BAR === */
+  .stats-bar { background: #fff; border-top: 1px solid #dde3ea; padding: 6px 16px; display: flex; gap: 18px; align-items: center; font-size: 12px; }
+  .stat-item { display: flex; align-items: center; gap: 5px; }
+  .stat-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .stat-val { font-weight: 700; }
+
+  /* === RULES PANEL === */
+  .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 900px; }
+  .rule-card { background: #fff; border: 1px solid #dde3ea; border-radius: 8px; padding: 16px; }
+  .rule-card h3 { font-size: 13px; font-weight: 700; color: #1a3a5c; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e8f0f8; }
+  .rule-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; gap: 10px; }
+  .rule-label { font-size: 12px; color: #444; flex: 1; }
+  .rule-input { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; width: 80px; }
+  .rule-select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+  .rule-toggle { display: flex; gap: 6px; }
+  .rtog { padding: 3px 10px; border: 1px solid #ccc; border-radius: 12px; font-size: 11px; cursor: pointer; background: #f5f5f5; color: #666; }
+  .rtog.on { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+
+  /* === STAFF PANEL === */
+  .staff-table { width: 100%; max-width: 700px; border-collapse: collapse; }
+  .staff-table th { background: #1a3a5c; color: #fff; padding: 7px 12px; text-align: left; font-size: 12px; }
+  .staff-table td { padding: 6px 12px; border-bottom: 1px solid #eee; font-size: 12px; }
+  .staff-table tr:hover td { background: #f5f9ff; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-rn { background: #fff3cd; color: #7c4a00; }
+  .badge-an { background: #cfe2ff; color: #0a4a7c; }
+  .add-staff-form { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .add-staff-form input, .add-staff-form select { padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+
+  /* === MODAL === */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #fff; border-radius: 10px; padding: 20px 24px; min-width: 300px; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+  .modal h3 { font-size: 15px; font-weight: 700; color: #1a3a5c; margin-bottom: 14px; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* === VIOLATION BADGE === */
+  .viol-badge { display: inline-block; background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 4px; font-size: 10px; padding: 1px 5px; margin-left: 3px; }
+  .viol-list { margin-top: 12px; }
+  .viol-item { background: #fff5f5; border-left: 3px solid #dc2626; padding: 6px 10px; margin-bottom: 6px; border-radius: 0 4px 4px 0; font-size: 12px; color: #b91c1c; }
+
+  /* legend */
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .leg-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+  .leg-box { width: 22px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+
+  .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 14px; font-size: 12px; color: #1e40af; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏥 효사랑가족요양병원 간호부 교대근무 관리 시스템</h1>
+  <div class="header-right" id="headerInfo">병동을 선택하세요</div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-title">📋 병동 목록</div>
+    <div id="wardList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <label>연도</label>
+        <select id="selYear"></select>
+        <label>월</label>
+        <select id="selMonth"></select>
+      </div>
+      <div class="sep"></div>
+      <button class="btn btn-success" onclick="autoGenerate()">⚡ 자동 근무표 생성</button>
+      <button class="btn btn-primary" onclick="saveSchedule()">💾 저장</button>
+      <button class="btn btn-outline" onclick="exportCSV()">📤 CSV 내보내기</button>
+      <div class="sep"></div>
+      <button class="btn btn-warning" onclick="checkViolations()">⚠️ 규칙 검사</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('schedule')">📅 근무표</div>
+      <div class="tab" onclick="switchTab('staff')">👥 인원 관리</div>
+      <div class="tab" onclick="switchTab('rules')">⚙️ 규칙 설정</div>
+      <div class="tab" onclick="switchTab('stats')">📊 통계</div>
+    </div>
+
+    <!-- SCHEDULE PANEL -->
+    <div class="content">
+      <div id="panel-schedule" class="panel active">
+        <div class="legend">
+          <div class="leg-item"><div class="leg-box s-D">D</div>주간</div>
+          <div class="leg-item"><div class="leg-box s-E">E</div>저녁</div>
+          <div class="leg-item"><div class="leg-box s-N">N</div>야간</div>
+          <div class="leg-item"><div class="leg-box s-M">M</div>조기</div>
+          <div class="leg-item"><div class="leg-box s-DE">DE</div>혼합DE</div>
+          <div class="leg-item"><div class="leg-box s-DN">DN</div>혼합DN</div>
+          <div class="leg-item"><div class="leg-box s-EN">EN</div>혼합EN</div>
+          <div class="leg-item"><div class="leg-box s-HD">HD</div>반차</div>
+          <div class="leg-item"><div class="leg-box s-OF">/</div>휴무</div>
+        </div>
+        <div class="schedule-wrap" id="scheduleWrap">
+          <div style="padding:40px;text-align:center;color:#999;">← 왼쪽에서 병동을 선택하세요</div>
+        </div>
+      </div>
+
+      <!-- STAFF PANEL -->
+      <div id="panel-staff" class="panel">
+        <div class="info-box">💡 인원 추가/삭제 후 근무표를 새로 생성하면 반영됩니다.</div>
+        <table class="staff-table" id="staffTable">
+          <thead><tr><th>이름</th><th>직급</th><th>고용형태</th><th>입사일</th><th>특이사항</th><th>관리</th></tr></thead>
+          <tbody id="staffBody"></tbody>
+        </table>
+        <div class="add-staff-form">
+          <input type="text" id="newName" placeholder="이름" style="width:80px">
+          <select id="newGrade"><option value="RN">RN</option><option value="AN">AN</option></select>
+          <input type="text" id="newType" placeholder="정규직" style="width:80px">
+          <input type="text" id="newJoin" placeholder="입사일 예)2024-01" style="width:110px">
+          <input type="text" id="newNote" placeholder="특이사항" style="width:120px">
+          <button class="btn btn-primary" onclick="addStaff()">+ 추가</button>
+        </div>
+      </div>
+
+      <!-- RULES PANEL -->
+      <div id="panel-rules" class="panel">
+        <div class="rules-grid" id="rulesGrid"></div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" onclick="saveRules()">규칙 저장</button>
+          <span id="rulesSaved" style="margin-left:10px;color:#16a34a;font-size:12px;display:none;">✔ 저장됨</span>
+        </div>
+      </div>
+
+      <!-- STATS PANEL -->
+      <div id="panel-stats" class="panel">
+        <div id="statsContent"><div style="color:#999;padding:20px;">근무표를 먼저 생성하세요.</div></div>
+      </div>
+    </div>
+
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-item"><div class="stat-dot" style="background:#3b82f6"></div><span>D: </span><span class="stat-val" id="totalD">0</span></div>
+      <div class="stat-item"><div class="stat-dot" style="background:#f59e0b"></div><span>E: </span><span class="stat-val" id="totalE">0</span></div>
+      <div class="stat-item"><div class="stat-dot" style="background:#8b5cf6"></div><span>N: </span><span class="stat-val" id="totalN">0</span></div>
+      <div class="stat-item"><div class="stat-dot" style="background:#94a3b8"></div><span>OFF: </span><span class="stat-val" id="totalOFF">0</span></div>
+      <div class="stat-item" style="margin-left:auto;color:#dc2626;font-weight:700;" id="violCount"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CELL EDIT MODAL -->
+<div class="modal-bg" id="cellModal">
+  <div class="modal">
+    <h3 id="modalTitle">근무 변경</h3>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;" id="shiftPicker"></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIOLATION MODAL -->
+<div class="modal-bg" id="violModal">
+  <div class="modal" style="max-width:480px;width:100%">
+    <h3>⚠️ 규칙 위반 항목</h3>
+    <div id="violContent" class="viol-list"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="closeViolModal()">닫기</button></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const SHIFTS = ['D','E','N','M','DE','DN','EN','HD','/'];
+const SHIFT_CLASS = {D:'s-D',E:'s-E',N:'s-N',M:'s-M',DE:'s-DE',DN:'s-DN',EN:'s-EN',HD:'s-HD','/':'s-OF','':'s-empty'};
+const SHIFT_LABEL = {D:'주간',E:'저녁',N:'야간',M:'조기',DE:'DE혼합',DN:'DN혼합',EN:'EN혼합',HD:'반차','/':'휴무'};
+
+const WARDS = [
+  {id:'W01',name:'1병동'}, {id:'W02',name:'2병동'}, {id:'W03',name:'3병동'},
+  {id:'W04',name:'4병동'}, {id:'W05',name:'5병동'}, {id:'W06',name:'6병동'},
+  {id:'W07',name:'7병동'}, {id:'W08',name:'8병동'}, {id:'W09',name:'9병동'},
+  {id:'W10',name:'10병동'}, {id:'W11',name:'11병동(암병동)'}
+];
+
+// 병동별 기본 인원 샘플
+const DEFAULT_STAFF = {
+  W02: [
+    {id:'s1',name:'김보람',grade:'RN',type:'정규',join:'2019-03',note:''},
+    {id:'s2',name:'정유리',grade:'RN',type:'정규',join:'2020-07',note:''},
+    {id:'s3',name:'김형미',grade:'RN',type:'정규',join:'2021-01',note:''},
+    {id:'s4',name:'이유진',grade:'RN',type:'정규',join:'2022-05',note:''},
+    {id:'s5',name:'김수연',grade:'AN',type:'정규',join:'2020-03',note:''},
+    {id:'s6',name:'임정옥',grade:'AN',type:'정규',join:'2021-09',note:''},
+    {id:'s7',name:'하은미',grade:'AN',type:'정규',join:'2022-02',note:''},
+    {id:'s8',name:'윤은주',grade:'AN',type:'정규',join:'2023-01',note:''},
+    {id:'s9',name:'이정자',grade:'AN',type:'정규',join:'2023-06',note:''},
+    {id:'s10',name:'이순미',grade:'AN',type:'정규',join:'2024-01',note:''},
+    {id:'s11',name:'김연주',grade:'AN',type:'계약',join:'2024-09',note:'야간전담'},
+  ]
+};
+
+function genDefaultStaff(wardId) {
+  if (DEFAULT_STAFF[wardId]) return JSON.parse(JSON.stringify(DEFAULT_STAFF[wardId]));
+  const rn = ['박지현','이민수','최수진','정다은'];
+  const an = ['강미리','조현아','윤서연','한지수','오민정','신예은'];
+  const all = [
+    ...rn.map((n,i)=>({id:`${wardId}_r${i}`,name:n,grade:'RN',type:'정규',join:'2022-01',note:''})),
+    ...an.map((n,i)=>({id:`${wardId}_a${i}`,name:n,grade:'AN',type:'정규',join:'2022-01',note:''})),
+  ];
+  return all;
+}
+
+// Global state
+let currentWard = null;
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+let wardStaff = {};   // wardId -> staff[]
+let wardSchedule = {}; // wardId -> {staffId -> [shifts per day]}
+let rules = {
+  maxConsecSame: 3,
+  nightMin: 2, nightMax: 3,
+  nightAfterOff: true,
+  minDPerMonth: 8,
+  minEPerMonth: 6,
+  minNPerMonth: 6,
+  minOffPerMonth: 8,
+  minDailyD: 2,
+  minDailyE: 1,
+  minDailyN: 1,
+  weekendRule: 'even',   // even=균등, free=자유
+  maxConsecWork: 5,
+  offAfterNight: true,
+};
+
+let editCell = null;
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadFromStorage();
+  buildWardList();
+  buildYearMonth();
+  buildRulesPanel();
+});
+
+function loadFromStorage(){
+  const s = localStorage.getItem('nurseApp');
+  if(s){ const d=JSON.parse(s); wardStaff=d.wardStaff||{}; wardSchedule=d.wardSchedule||{}; rules=Object.assign(rules,d.rules||{}); }
+}
+function saveToStorage(){
+  localStorage.setItem('nurseApp', JSON.stringify({wardStaff, wardSchedule, rules}));
+}
+
+function buildYearMonth(){
+  const ys = document.getElementById('selYear');
+  const ms = document.getElementById('selMonth');
+  for(let y=2024;y<=2027;y++) ys.innerHTML+=`<option value="${y}"${y===currentYear?' selected':''}>${y}년</option>`;
+  for(let m=1;m<=12;m++) ms.innerHTML+=`<option value="${m}"${m===currentMonth?' selected':''}>${m}월</option>`;
+  ys.onchange=()=>{ currentYear=+ys.value; renderSchedule(); };
+  ms.onchange=()=>{ currentMonth=+ms.value; renderSchedule(); };
+}
+
+function buildWardList(){
+  const el = document.getElementById('wardList');
+  el.innerHTML = WARDS.map(w=>`
+    <button class="ward-btn" id="wb_${w.id}" onclick="selectWard('${w.id}')">
+      <span class="ward-dot"></span>${w.name}
+    </button>`).join('');
+}
+
+function selectWard(wardId){
+  currentWard = wardId;
+  document.querySelectorAll('.ward-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`wb_${wardId}`).classList.add('active');
+  if(!wardStaff[wardId]) wardStaff[wardId] = genDefaultStaff(wardId);
+  const w = WARDS.find(x=>x.id===wardId);
+  document.getElementById('headerInfo').textContent = `${w.name} | ${currentYear}년 ${currentMonth}월`;
+  renderSchedule();
+  renderStaffTable();
+}
+
+// ============================================================
+// SCHEDULE RENDER
+// ============================================================
+function getDaysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+function getDayOfWeek(y,m,d){ return new Date(y,m-1,d).getDay(); } // 0=sun
+function isWeekend(y,m,d){ const dw=getDayOfWeek(y,m,d); return dw===0||dw===6; }
+const DOW = ['일','월','화','수','목','금','토'];
+
+function renderSchedule(){
+  if(!currentWard){ return; }
+  const staff = wardStaff[currentWard] || [];
+  const days = getDaysInMonth(currentYear, currentMonth);
+  const key = `${currentWard}_${currentYear}_${currentMonth}`;
+  if(!wardSchedule[key]){
+    wardSchedule[key] = {};
+    staff.forEach(s=>{ wardSchedule[key][s.id] = Array(days).fill(''); });
+  }
+  const sch = wardSchedule[key];
+  // ensure all staff have rows
+  staff.forEach(s=>{ if(!sch[s.id]) sch[s.id]=Array(days).fill(''); });
+
+  // Header
+  let html = `<table class="schedule-table"><thead>`;
+  html += `<tr>`;
+  html += `<th class="th-fixed" style="min-width:70px">이름</th>`;
+  html += `<th class="th-fixed" style="left:70px;min-width:36px">직급</th>`;
+  for(let d=1;d<=days;d++){
+    const wd = getDayOfWeek(currentYear,currentMonth,d);
+    const we = wd===0||wd===6;
+    html += `<th${we?' class="weekend"':''} style="min-width:32px">${d}<br><span style="font-size:9px">${DOW[wd]}</span></th>`;
+  }
+  html += `<th style="background:#0f2840">E합</th><th style="background:#0f2840">N합</th><th style="background:#0f2840">OFF</th><th style="background:#0f2840">연차</th>`;
+  html += `</tr></thead><tbody>`;
+
+  // Daily count rows
+  const dailyCounts = {};
+  for(let d=0;d<days;d++){
+    dailyCounts[d]={D:0,E:0,N:0};
+    staff.forEach(s=>{
+      const sh=(sch[s.id]||[])[d]||'';
+      if(sh==='D'||sh==='M') dailyCounts[d].D++;
+      else if(sh==='E') dailyCounts[d].E++;
+      else if(sh==='N') dailyCounts[d].N++;
+      else if(sh==='DE'){dailyCounts[d].D++;dailyCounts[d].E++;}
+      else if(sh==='DN'){dailyCounts[d].D++;dailyCounts[d].N++;}
+      else if(sh==='EN'){dailyCounts[d].E++;dailyCounts[d].N++;}
+    });
+  }
+
+  let totalD=0,totalE=0,totalN=0,totalOFF=0;
+
+  staff.forEach(s=>{
+    const row = sch[s.id] || Array(days).fill('');
+    let cD=0,cE=0,cN=0,cOFF=0;
+    row.forEach(sh=>{
+      if(sh==='D'||sh==='M') cD++;
+      else if(sh==='E') cE++;
+      else if(sh==='N') cN++;
+      else if(sh==='/'||sh==='') cOFF++;
+      else if(sh==='DE'){cD++;cE++;}
+      else if(sh==='DN'){cD++;cN++;}
+      else if(sh==='EN'){cE++;cN++;}
+    });
+    totalD+=cD; totalE+=cE; totalN+=cN; totalOFF+=cOFF;
+    const warnD = cD<rules.minDPerMonth;
+    const warnE = cE<rules.minEPerMonth;
+    const warnN = cN<rules.minNPerMonth;
+    html += `<tr class="row-${s.grade.toLowerCase()}">`;
+    html += `<td class="name-cell">${s.name}</td>`;
+    html += `<td class="grade-cell" style="left:70px"><span class="badge badge-${s.grade.toLowerCase()}">${s.grade}</span></td>`;
+    for(let d=0;d<days;d++){
+      const sh = row[d]||'';
+      const cls = SHIFT_CLASS[sh]||'s-empty';
+      const we = isWeekend(currentYear,currentMonth,d+1);
+      html += `<td class="shift-cell ${cls}${we?' weekend-col':''}" onclick="openCellModal('${s.id}',${d})"><span style="font-size:11.5px;font-weight:700">${sh||''}</span></td>`;
+    }
+    html += `<td class="sum-cell ${warnE?'sum-warn':'sum-e'}">${cE}</td>`;
+    html += `<td class="sum-cell ${warnN?'sum-warn':'sum-n'}">${cN}</td>`;
+    html += `<td class="sum-cell sum-off">${cOFF}</td>`;
+    html += `<td class="sum-cell" style="color:#666">0</td>`;
+    html += `</tr>`;
+  });
+
+  // Daily count row
+  html += `<tr class="count-row"><td class="name-cell" style="background:#f0f4f8;font-weight:700;color:#555">일별 인원</td><td style="background:#f0f4f8"></td>`;
+  for(let d=0;d<days;d++){
+    const c=dailyCounts[d];
+    html+=`<td style="font-size:10px;padding:2px 1px!important">
+      <span class="count-d">${c.D}</span>/<span class="count-e">${c.E}</span>/<span class="count-n">${c.N}</span>
+    </td>`;
+  }
+  html+=`<td colspan="4" style="background:#f0f4f8"></td></tr>`;
+
+  html += `</tbody></table>`;
+  document.getElementById('scheduleWrap').innerHTML = html;
+  document.getElementById('totalD').textContent = totalD;
+  document.getElementById('totalE').textContent = totalE;
+  document.getElementById('totalN').textContent = totalN;
+  document.getElementById('totalOFF').textContent = totalOFF;
+  updateStatsPanel();
+}
+
+// ============================================================
+// CELL MODAL
+// ============================================================
+function openCellModal(staffId, dayIdx){
+  editCell = {staffId, dayIdx};
+  const key = `${currentWard}_${currentYear}_${currentMonth}`;
+  const cur = (wardSchedule[key]||{})[staffId]?.[dayIdx]||'';
+  const staff = (wardStaff[currentWard]||[]).find(s=>s.id===staffId);
+  document.getElementById('modalTitle').textContent = `${staff?.name||''} — ${dayIdx+1}일 근무 변경`;
+  const picker = document.getElementById('shiftPicker');
+  picker.innerHTML = [...SHIFTS,''].map(sh=>`
+    <button onclick="setCellShift('${sh}')" style="
+      padding:10px 4px;border-radius:6px;border:2px solid ${cur===sh?'#1a3a5c':'#ddd'};
+      cursor:pointer;font-size:12px;font-weight:700;
+      background:${cur===sh?'#1a3a5c':getCellBg(sh)};
+      color:${cur===sh?'#fff':getCellColor(sh)};
+    ">${sh||'비움'}<br><span style="font-size:9px;font-weight:400">${SHIFT_LABEL[sh]||'삭제'}</span></button>
+  `).join('');
+  document.getElementById('cellModal').classList.add('show');
+}
+function getCellBg(sh){ const m={D:'#dbeafe',E:'#fef9c3',N:'#ede9fe',M:'#dcfce7',DE:'#fed7aa',DN:'#e9d5ff',EN:'#fce7f3',HD:'#d1fae5','/':'#f1f5f9'}; return m[sh]||'#f8f8f8'; }
+function getCellColor(sh){ const m={D:'#1d4ed8',E:'#854d0e',N:'#5b21b6',M:'#166534',DE:'#9a3412',DN:'#6b21a8',EN:'#9d174d',HD:'#065f46','/':'#94a3b8'}; return m[sh]||'#999'; }
+function setCellShift(sh){
+  if(!editCell||!currentWard) return;
+  const key=`${currentWard}_${currentYear}_${currentMonth}`;
+  if(wardSchedule[key]&&wardSchedule[key][editCell.staffId]){
+    wardSchedule[key][editCell.staffId][editCell.dayIdx]=sh;
+  }
+  closeModal();
+  renderSchedule();
+  saveToStorage();
+}
+function closeModal(){ document.getElementById('cellModal').classList.remove('show'); editCell=null; }
+
+// ============================================================
+// AUTO GENERATE — v2 constraint-based balanced scheduler
+// ============================================================
+function autoGenerate(){
+  if(!currentWard){ alert('병동을 먼저 선택하세요.'); return; }
+  const staff = wardStaff[currentWard]||[];
+  if(!staff.length){ alert('인원이 없습니다.'); return; }
+  const days = getDaysInMonth(currentYear, currentMonth);
+  const key  = `${currentWard}_${currentYear}_${currentMonth}`;
+
+  // ── 목표 횟수 계산 ──────────────────────────────────────────
+  // 총 근무 가능일 = days - 최소OFF
+  const targetN   = rules.minNPerMonth;
+  const targetD   = rules.minDPerMonth;
+  const targetE   = rules.minEPerMonth;
+  const targetOFF = Math.max(rules.minOffPerMonth, days - targetD - targetE - targetN);
+
+  // ── 초기화 ─────────────────────────────────────────────────
+  wardSchedule[key] = {};
+  staff.forEach(s => { wardSchedule[key][s.id] = Array(days).fill(''); });
+  const sch = wardSchedule[key];
+
+  // ── 헬퍼 ───────────────────────────────────────────────────
+  const countOf = (arr, sh) => arr.filter(x => x === sh).length;
+  const isWork  = sh => sh && sh !== '/';
+  // 앞 d일의 연속근무수
+  function consecWorkBefore(arr, d){
+    let c=0;
+    for(let i=d-1;i>=0;i--){ if(isWork(arr[i])) c++; else break; }
+    return c;
+  }
+  // 직전 근무 타입
+  const prevShift = (arr, d) => d>0 ? arr[d-1] : '';
+
+  // ── STEP 1: 야간(N) 블록 균등 배정 ─────────────────────────
+  // 인원을 섞어서 야간 블록 시작일이 분산되도록
+  const staffOrder = [...staff].sort(()=>Math.random()-0.5);
+  const totalNeed  = staffOrder.length * targetN;
+  // 각 직원에게 블록을 1개씩 순차 배정 (시작일을 분산)
+  const nightSlots = []; // {staffId, start, len}
+  const usedDays   = {}; // day -> count of N assigned
+
+  staffOrder.forEach((s, si) => {
+    let nightsLeft = targetN;
+    // 시작 오프셋을 직원 인덱스로 분산 (0, 7, 14, 21... 식으로)
+    let searchStart = Math.floor((si / staffOrder.length) * (days - rules.nightMax - 2));
+    searchStart = Math.max(0, Math.min(searchStart, days - rules.nightMax - 2));
+
+    while(nightsLeft > 0){
+      const blen = Math.min(nightsLeft,
+        rules.nightMin + Math.floor(Math.random() * (rules.nightMax - rules.nightMin + 1)));
+
+      // searchStart부터 빈 블록 탐색
+      let placed = false;
+      for(let start = searchStart; start <= days - blen; start++){
+        // 해당 구간 전체 비어있는지
+        let ok = true;
+        for(let i=0;i<blen;i++) if(sch[s.id][start+i] !== '') { ok=false; break; }
+        // 블록 직전이 N이면 안됨 (연속 과다 방지)
+        if(start > 0 && sch[s.id][start-1] === 'N') ok = false;
+        // 야간 후 OFF 슬롯 확보
+        const offDay = start + blen;
+        if(rules.offAfterNight && offDay < days && sch[s.id][offDay] !== '') ok = false;
+
+        if(ok){
+          for(let i=0;i<blen;i++){
+            sch[s.id][start+i] = 'N';
+            usedDays[start+i] = (usedDays[start+i]||0)+1;
+          }
+          if(rules.offAfterNight && offDay < days) sch[s.id][offDay] = '/';
+          nightsLeft -= blen;
+          searchStart = offDay + 1 + Math.floor(Math.random()*3);
+          placed = true;
+          break;
+        }
+      }
+      if(!placed) break; // 더 이상 배정 불가
+    }
+  });
+
+  // ── STEP 2: 주말 OFF 균등 배분 ─────────────────────────────
+  // 전체 주말 목록
+  const weekendDays = [];
+  for(let d=0;d<days;d++) if(isWeekend(currentYear,currentMonth,d+1)) weekendDays.push(d);
+
+  // 각 직원 주말근무 목표 = 전체주말 / 직원수 (상한)
+  const maxWEWork = Math.floor(weekendDays.length / staff.length) + 1;
+  // 주말 OFF 배정: 이미 N/OFF 아닌 주말만 고려
+  staff.forEach(s => {
+    let weWork = 0;
+    weekendDays.forEach(d => {
+      if(sch[s.id][d] !== '') return; // 이미 배정됨
+      if(weWork >= maxWEWork){ sch[s.id][d] = '/'; } // 주말 초과 → OFF
+      else weWork++;
+    });
+  });
+
+  // ── STEP 3: 일별 최소 인원 보장 (D/E/N) ────────────────────
+  // 날짜별 부족한 D/E 인원을 빈 슬롯에서 채움
+  for(let d=0; d<days; d++){
+    // 현재 배정 현황
+    let cD = staff.filter(s=>sch[s.id][d]==='D').length;
+    let cE = staff.filter(s=>sch[s.id][d]==='E').length;
+    let cN = staff.filter(s=>sch[s.id][d]==='N').length;
+
+    // D 부족 보충
+    if(cD < rules.minDailyD){
+      // 빈 슬롯 직원 중 연속근무 여유 있고 이전이 N이 아닌 직원 우선
+      const cands = staff.filter(s=>{
+        if(sch[s.id][d]!=='') return false;
+        if(prevShift(sch[s.id],d)==='N') return false;
+        if(consecWorkBefore(sch[s.id],d) >= rules.maxConsecWork) return false;
+        return true;
+      }).sort((a,b)=> countOf(sch[a.id],'D') - countOf(sch[b.id],'D')); // D적은 사람 우선
+      for(const s of cands){
+        if(cD >= rules.minDailyD) break;
+        sch[s.id][d] = 'D'; cD++;
+      }
+    }
+
+    // E 부족 보충
+    if(cE < rules.minDailyE){
+      const cands = staff.filter(s=>{
+        if(sch[s.id][d]!=='') return false;
+        if(prevShift(sch[s.id],d)==='N') return false;
+        if(consecWorkBefore(sch[s.id],d) >= rules.maxConsecWork) return false;
+        return true;
+      }).sort((a,b)=> countOf(sch[a.id],'E') - countOf(sch[b.id],'E'));
+      for(const s of cands){
+        if(cE >= rules.minDailyE) break;
+        sch[s.id][d] = 'E'; cE++;
+      }
+    }
+  }
+
+  // ── STEP 4: 개인별 D/E 균등 채우기 ────────────────────────
+  staff.forEach(s => {
+    let cD = countOf(sch[s.id],'D');
+    let cE = countOf(sch[s.id],'E');
+
+    // 빈 날짜 목록 (날짜 순서를 섞어 분산 배치)
+    const emptyDays = [];
+    for(let d=0;d<days;d++) if(sch[s.id][d]==='') emptyDays.push(d);
+    // 셔플
+    for(let i=emptyDays.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [emptyDays[i],emptyDays[j]]=[emptyDays[j],emptyDays[i]];
+    }
+
+    for(const d of emptyDays){
+      // 연속근무 초과 체크
+      if(consecWorkBefore(sch[s.id],d) >= rules.maxConsecWork){
+        sch[s.id][d] = '/'; continue;
+      }
+      // 야간 직후 → OFF
+      if(prevShift(sch[s.id],d) === 'N'){
+        if(rules.offAfterNight){ sch[s.id][d] = '/'; continue; }
+      }
+
+      // D/E 목표 미달이면 채움 (D 우선, 그 다음 E)
+      if(cD < targetD){
+        sch[s.id][d] = 'D'; cD++;
+      } else if(cE < targetE){
+        sch[s.id][d] = 'E'; cE++;
+      } else {
+        sch[s.id][d] = '/';
+      }
+    }
+  });
+
+  // ── STEP 5: 연속근무 위반 후처리 ──────────────────────────
+  staff.forEach(s => {
+    let run = 0;
+    for(let d=0;d<days;d++){
+      if(isWork(sch[s.id][d])) run++;
+      else run = 0;
+      if(run > rules.maxConsecWork && d+1 < days && sch[s.id][d+1] !== 'N'){
+        sch[s.id][d+1] = '/'; run = 0;
+      }
+    }
+  });
+
+  // ── STEP 6: 공정성 보정 (D/E 횟수 편차 최소화) ────────────
+  // 2회 반복 조정
+  for(let pass=0;pass<2;pass++){
+    const dCounts = staff.map(s=>({s, c:countOf(sch[s.id],'D')}));
+    const eCounts = staff.map(s=>({s, c:countOf(sch[s.id],'E')}));
+    const dMean   = dCounts.reduce((a,x)=>a+x.c,0)/staff.length;
+    const eMean   = eCounts.reduce((a,x)=>a+x.c,0)/staff.length;
+
+    // D 많은 사람 → OFF 교체 가능한 D를 E 부족한 사람에게
+    dCounts.sort((a,b)=>b.c-a.c);
+    eCounts.sort((a,b)=>a.c-b.c);
+
+    // 상위 D 과다 → E로 일부 교체
+    for(const {s} of dCounts.filter(x=>x.c>dMean+1)){
+      for(let d=0;d<days;d++){
+        if(sch[s.id][d]!=='D') continue;
+        if(consecWorkBefore(sch[s.id],d)>1) continue; // 연속중간은 건드리지 않음
+        const dailyD = staff.filter(x=>sch[x.id][d]==='D').length;
+        if(dailyD <= rules.minDailyD) continue; // 일별 최소 보장
+        if(countOf(sch[s.id],'E') < eMean){
+          sch[s.id][d]='E'; break;
+        }
+      }
+    }
+  }
+
+  saveToStorage();
+  renderSchedule();
+  checkViolations(true);
+}
+
+// 균등도 점수 계산 (낮을수록 좋음)
+function calcFairnessScore(staff, sch){
+  const types = ['D','E','N'];
+  let score = 0;
+  types.forEach(t=>{
+    const counts = staff.map(s=>countOf(sch[s.id]||[],t));
+    const mean   = counts.reduce((a,b)=>a+b,0)/counts.length;
+    const variance = counts.reduce((a,b)=>a+Math.pow(b-mean,2),0)/counts.length;
+    score += Math.sqrt(variance);
+  });
+  // 주말근무 균등도
+  const weCounts = staff.map(s=>{
+    let c=0;
+    (sch[s.id]||[]).forEach((sh,d)=>{ if(isWeekend(currentYear,currentMonth,d+1)&&isWork(sh)) c++; });
+    return c;
+  });
+  const weMean = weCounts.reduce((a,b)=>a+b,0)/staff.length;
+  score += Math.sqrt(weCounts.reduce((a,b)=>a+Math.pow(b-weMean,2),0)/staff.length);
+  return Math.round(score*100)/100;
+}
+
+// ============================================================
+// VIOLATION CHECK
+// ============================================================
+function checkViolations(silent=false){
+  if(!currentWard) return;
+  const staff=wardStaff[currentWard]||[];
+  const days=getDaysInMonth(currentYear,currentMonth);
+  const key=`${currentWard}_${currentYear}_${currentMonth}`;
+  const sch=wardSchedule[key]||{};
+  const viols=[];
+
+  staff.forEach(s=>{
+    const row=sch[s.id]||[];
+    // N after N check (max 3)
+    let nRun=0;
+    for(let d=0;d<days;d++){
+      if(row[d]==='N') nRun++; else nRun=0;
+      if(nRun>rules.nightMax) viols.push(`${s.name}: 야간 ${d+1}일 — 연속 야간 ${nRun}일 초과 (최대 ${rules.nightMax}일)`);
+    }
+    // consecutive work
+    let cWork=0;
+    for(let d=0;d<days;d++){
+      if(row[d]&&row[d]!=='/') cWork++; else cWork=0;
+      if(cWork>rules.maxConsecWork) viols.push(`${s.name}: ${d+1}일 — 연속 근무 ${cWork}일 초과 (최대 ${rules.maxConsecWork}일)`);
+    }
+    // monthly mins
+    let cD=0,cE=0,cN=0;
+    row.forEach(sh=>{ if(sh==='D'||sh==='M') cD++; else if(sh==='E') cE++; else if(sh==='N') cN++; });
+    if(cD<rules.minDPerMonth) viols.push(`${s.name}: D근무 ${cD}회 — 최소 ${rules.minDPerMonth}회 미달`);
+    if(cE<rules.minEPerMonth) viols.push(`${s.name}: E근무 ${cE}회 — 최소 ${rules.minEPerMonth}회 미달`);
+    if(cN<rules.minNPerMonth) viols.push(`${s.name}: N근무 ${cN}회 — 최소 ${rules.minNPerMonth}회 미달`);
+    // off after night
+    if(rules.offAfterNight){
+      for(let d=0;d<days-1;d++){
+        if(row[d]==='N'&&row[d+1]&&row[d+1]!=='N'&&row[d+1]!=='/'){
+          viols.push(`${s.name}: ${d+2}일 — 야간 후 즉시 근무 배정됨`);
+        }
+      }
+    }
+  });
+
+  document.getElementById('violCount').textContent = viols.length ? `⚠️ 위반 ${viols.length}건` : '✅ 규칙 이상 없음';
+  if(!silent){
+    document.getElementById('violContent').innerHTML = viols.length
+      ? viols.map(v=>`<div class="viol-item">${v}</div>`).join('')
+      : '<div style="color:#16a34a;padding:10px">✅ 모든 규칙을 만족합니다.</div>';
+    document.getElementById('violModal').classList.add('show');
+  }
+}
+function closeViolModal(){ document.getElementById('violModal').classList.remove('show'); }
+
+// ============================================================
+// STAFF
+// ============================================================
+function renderStaffTable(){
+  if(!currentWard) return;
+  const staff=wardStaff[currentWard]||[];
+  document.getElementById('staffBody').innerHTML=staff.map((s,i)=>`
+    <tr>
+      <td>${s.name}</td>
+      <td><span class="badge badge-${s.grade.toLowerCase()}">${s.grade}</span></td>
+      <td>${s.type}</td>
+      <td>${s.join}</td>
+      <td>${s.note}</td>
+      <td><button class="btn btn-outline" style="padding:2px 8px;font-size:11px;color:#dc2626;border-color:#dc2626" onclick="removeStaff(${i})">삭제</button></td>
+    </tr>`).join('');
+}
+function addStaff(){
+  if(!currentWard){ alert('병동을 선택하세요'); return; }
+  const name=document.getElementById('newName').value.trim();
+  if(!name){ alert('이름을 입력하세요'); return; }
+  const s={id:`s_${Date.now()}`,name,grade:document.getElementById('newGrade').value,
+    type:document.getElementById('newType').value||'정규',
+    join:document.getElementById('newJoin').value,
+    note:document.getElementById('newNote').value};
+  wardStaff[currentWard].push(s);
+  renderStaffTable(); saveToStorage();
+  ['newName','newType','newJoin','newNote'].forEach(id=>document.getElementById(id).value='');
+}
+function removeStaff(idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  wardStaff[currentWard].splice(idx,1);
+  renderStaffTable(); saveToStorage();
+}
+
+// ============================================================
+// RULES PANEL
+// ============================================================
+function buildRulesPanel(){
+  document.getElementById('rulesGrid').innerHTML=`
+    <div class="rule-card">
+      <h3>야간(N) 근무 규칙</h3>
+      <div class="rule-row"><span class="rule-label">연속 야간 최소일</span><input class="rule-input" type="number" id="r_nightMin" value="${rules.nightMin}" min="1" max="7"></div>
+      <div class="rule-row"><span class="rule-label">연속 야간 최대일</span><input class="rule-input" type="number" id="r_nightMax" value="${rules.nightMax}" min="1" max="7"></div>
+      <div class="rule-row"><span class="rule-label">야간 후 OFF 강제</span>
+        <div class="rule-toggle">
+          <span class="rtog ${rules.offAfterNight?'on':''}" onclick="toggleRule(this,'offAfterNight',true)">적용</span>
+          <span class="rtog ${!rules.offAfterNight?'on':''}" onclick="toggleRule(this,'offAfterNight',false)">미적용</span>
+        </div>
+      </div>
+    </div>
+    <div class="rule-card">
+      <h3>연속 근무 제한</h3>
+      <div class="rule-row"><span class="rule-label">최대 연속 근무일</span><input class="rule-input" type="number" id="r_maxConsecWork" value="${rules.maxConsecWork}" min="1" max="14"></div>
+      <div class="rule-row"><span class="rule-label">동일근무 최대 연속</span><input class="rule-input" type="number" id="r_maxConsecSame" value="${rules.maxConsecSame}" min="1" max="7"></div>
+    </div>
+    <div class="rule-card">
+      <h3>월간 최소 근무 횟수</h3>
+      <div class="rule-row"><span class="rule-label">D(주간) 최소</span><input class="rule-input" type="number" id="r_minDPerMonth" value="${rules.minDPerMonth}" min="0" max="31"></div>
+      <div class="rule-row"><span class="rule-label">E(저녁) 최소</span><input class="rule-input" type="number" id="r_minEPerMonth" value="${rules.minEPerMonth}" min="0" max="31"></div>
+      <div class="rule-row"><span class="rule-label">N(야간) 최소</span><input class="rule-input" type="number" id="r_minNPerMonth" value="${rules.minNPerMonth}" min="0" max="31"></div>
+      <div class="rule-row"><span class="rule-label">OFF 최소</span><input class="rule-input" type="number" id="r_minOffPerMonth" value="${rules.minOffPerMonth}" min="0" max="31"></div>
+    </div>
+    <div class="rule-card">
+      <h3>일별 최소 인원</h3>
+      <div class="rule-row"><span class="rule-label">일별 D 최소 인원</span><input class="rule-input" type="number" id="r_minDailyD" value="${rules.minDailyD}" min="0" max="10"></div>
+      <div class="rule-row"><span class="rule-label">일별 E 최소 인원</span><input class="rule-input" type="number" id="r_minDailyE" value="${rules.minDailyE}" min="0" max="10"></div>
+      <div class="rule-row"><span class="rule-label">일별 N 최소 인원</span><input class="rule-input" type="number" id="r_minDailyN" value="${rules.minDailyN}" min="0" max="10"></div>
+      <div class="rule-row"><span class="rule-label">주말 근무 배분</span>
+        <select class="rule-select" id="r_weekendRule">
+          <option value="even" ${rules.weekendRule==='even'?'selected':''}>균등 배분</option>
+          <option value="free" ${rules.weekendRule==='free'?'selected':''}>자유 설정</option>
+        </select>
+      </div>
+    </div>`;
+}
+function toggleRule(el, key, val){
+  rules[key]=val;
+  el.closest('.rule-toggle').querySelectorAll('.rtog').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+}
+function saveRules(){
+  const ids=['nightMin','nightMax','maxConsecWork','maxConsecSame','minDPerMonth','minEPerMonth','minNPerMonth','minOffPerMonth','minDailyD','minDailyE','minDailyN'];
+  ids.forEach(k=>{ const el=document.getElementById(`r_${k}`); if(el) rules[k]=+el.value; });
+  rules.weekendRule=document.getElementById('r_weekendRule').value;
+  saveToStorage();
+  const saved=document.getElementById('rulesSaved');
+  saved.style.display='inline'; setTimeout(()=>saved.style.display='none',2000);
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function updateStatsPanel(){
+  if(!currentWard) return;
+  const staff=wardStaff[currentWard]||[];
+  const days=getDaysInMonth(currentYear,currentMonth);
+  const key=`${currentWard}_${currentYear}_${currentMonth}`;
+  const sch=wardSchedule[key]||{};
+  if(!staff.length){ document.getElementById('statsContent').innerHTML='<div style="color:#999;padding:20px;">인원이 없습니다.</div>'; return; }
+
+  // 평균 계산
+  const allD=[], allE=[], allN=[], allWE=[];
+  staff.forEach(s=>{
+    const row=sch[s.id]||[];
+    let cD=0,cE=0,cN=0,cOff=0,cWE=0;
+    row.forEach((sh,d)=>{
+      if(sh==='D'||sh==='M') cD++;
+      else if(sh==='E') cE++;
+      else if(sh==='N') cN++;
+      else if(sh==='/'||sh==='') cOff++;
+      if(isWeekend(currentYear,currentMonth,d+1)&&sh&&sh!=='/') cWE++;
+    });
+    allD.push(cD); allE.push(cE); allN.push(cN); allWE.push(cWE);
+  });
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0;
+  const std = arr => {
+    const m = arr.reduce((a,b)=>a+b,0)/arr.length;
+    return Math.sqrt(arr.reduce((a,b)=>a+Math.pow(b-m,2),0)/arr.length).toFixed(2);
+  };
+  const fairScore = calcFairnessScore(staff, sch);
+
+  // 공정성 게이지 색
+  const fColor = fairScore<2?'#16a34a':fairScore<4?'#d97706':'#dc2626';
+  const fLabel = fairScore<2?'우수':'근우'<4?'보통':'개선필요';
+
+  let rows='';
+  staff.forEach((s,i)=>{
+    const row=sch[s.id]||[];
+    const dv = d=> Math.abs(d - parseFloat(avg(allD)));
+    let cD=allD[i],cE=allE[i],cN=allN[i],cOff=0,cWE=allWE[i];
+    row.forEach(sh=>{ if(sh==='/'||sh==='') cOff++; });
+    const dDev=Math.abs(cD-parseFloat(avg(allD)));
+    const eDev=Math.abs(cE-parseFloat(avg(allE)));
+    const nDev=Math.abs(cN-parseFloat(avg(allN)));
+    const devBad = dDev>2||eDev>2||nDev>2;
+    rows+=`<tr${devBad?' style="background:#fff5f5"':''}>
+      <td>${s.name}</td>
+      <td><span class="badge badge-${s.grade.toLowerCase()}">${s.grade}</span></td>
+      <td style="color:#1d4ed8;font-weight:700">${cD} <span style="color:#94a3b8;font-size:10px">${dDev>1?'(±'+dDev.toFixed(0)+')':''}</span></td>
+      <td style="color:#854d0e;font-weight:700">${cE} <span style="color:#94a3b8;font-size:10px">${eDev>1?'(±'+eDev.toFixed(0)+')':''}</span></td>
+      <td style="color:#5b21b6;font-weight:700">${cN} <span style="color:#94a3b8;font-size:10px">${nDev>1?'(±'+nDev.toFixed(0)+')':''}</span></td>
+      <td style="color:#64748b">${cOff}</td>
+      <td style="color:#dc2626">${cWE}</td>
+      <td style="font-weight:700">${cD+cE+cN}</td>
+    </tr>`;
+  });
+
+  document.getElementById('statsContent').innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;min-width:120px">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">D 평균 / 편차</div>
+        <div style="font-size:18px;font-weight:700;color:#1d4ed8">${avg(allD)} <span style="font-size:12px">σ${std(allD)}</span></div>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;min-width:120px">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">E 평균 / 편차</div>
+        <div style="font-size:18px;font-weight:700;color:#854d0e">${avg(allE)} <span style="font-size:12px">σ${std(allE)}</span></div>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;min-width:120px">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">N 평균 / 편차</div>
+        <div style="font-size:18px;font-weight:700;color:#5b21b6">${avg(allN)} <span style="font-size:12px">σ${std(allN)}</span></div>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;min-width:120px">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">주말근무 평균</div>
+        <div style="font-size:18px;font-weight:700;color:#dc2626">${avg(allWE)} <span style="font-size:12px">σ${std(allWE)}</span></div>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;min-width:140px">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">공정성 점수 <span style="font-size:10px">(낮을수록 좋음)</span></div>
+        <div style="font-size:18px;font-weight:700;color:${fColor}">${fairScore} <span style="font-size:11px">${fairScore<2?'✅ 우수':fairScore<4?'⚠️ 보통':'❌ 개선필요'}</span></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#888;margin-bottom:8px">※ 붉은 행 = D/E/N 중 평균 대비 ±2 이상 편차 발생</div>
+    <table class="staff-table" style="max-width:100%">
+      <thead><tr><th>이름</th><th>직급</th><th>D합</th><th>E합</th><th>N합</th><th>OFF</th><th>주말근무</th><th>총근무</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const tabs=['schedule','staff','rules','stats'];
+  const idx=tabs.indexOf(name);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById(`panel-${name}`).classList.add('active');
+  if(name==='staff') renderStaffTable();
+  if(name==='stats') updateStatsPanel();
+}
+
+// ============================================================
+// SAVE / EXPORT
+// ============================================================
+function saveSchedule(){ saveToStorage(); alert('저장되었습니다.'); }
+function exportCSV(){
+  if(!currentWard){ alert('병동을 선택하세요'); return; }
+  const staff=wardStaff[currentWard]||[];
+  const days=getDaysInMonth(currentYear,currentMonth);
+  const key=`${currentWard}_${currentYear}_${currentMonth}`;
+  const sch=wardSchedule[key]||{};
+  let csv=`이름,직급,${Array.from({length:days},(_,i)=>i+1+'일').join(',')},D합,E합,N합,OFF\n`;
+  staff.forEach(s=>{
+    const row=sch[s.id]||[];
+    let cD=0,cE=0,cN=0,cOff=0;
+    row.forEach(sh=>{ if(sh==='D') cD++; else if(sh==='E') cE++; else if(sh==='N') cN++; else if(sh==='/'||sh==='') cOff++; });
+    csv+=`${s.name},${s.grade},${row.join(',')},${cD},${cE},${cN},${cOff}\n`;
+  });
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`근무표_${currentWard}_${currentYear}${String(currentMonth).padStart(2,'0')}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>
